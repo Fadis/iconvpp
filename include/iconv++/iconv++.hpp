@@ -5,7 +5,8 @@
 #include<memory>
 #include<boost/mpl/has_xxx.hpp>
 #include<langinfo.h>
-#include<boost/preprocessor.hpp>
+#include<boost/bind.hpp>
+#include<boost/type_traits.hpp>
 #include<exception>
 #include<stdexcept>
 #include<vector>
@@ -97,6 +98,13 @@ namespace iconvpp {
           if( cd == reinterpret_cast<iconv_t>(-1) )
             throw std::runtime_error(strerror(errno));
         }
+        converter( const converter<From,To> &source ) : cd( iconv_open( get_code_name<To>::value().c_str(), get_code_name<From>::value().c_str() ) ) {
+          if( cd == reinterpret_cast<iconv_t>(-1) )
+            throw std::runtime_error(strerror(errno));
+        }
+        ~converter() {
+          iconv_close( cd );
+        }
         std::vector< char > get_block(
             std::vector<char>::const_iterator prefix_begin, std::vector<char>::const_iterator prefix_end,
             const From &from_string, typename From::size_type head_pos ) {
@@ -139,7 +147,7 @@ namespace iconvpp {
         iconv_t cd; 
     };
   namespace detail {
-    template< typename From, typename To >
+    template< typename From, typename To, typename raw_from_type = typename boost::remove_cv< From >::type >
       class string_cast_internal {
         public:
           static To exec( From input ) {
@@ -147,26 +155,26 @@ namespace iconvpp {
             return iconv_instance( input );
           }
       };
-    template< typename To >
-      class string_cast_internal< const char*, To > {
+    template< typename From, typename To >
+      class string_cast_internal< From, To, char* > {
         public:
-          static To exec( const char *input ) {
+          static To exec( From input ) {
             iconvpp::converter< std::string, To > iconv_instance;
             return iconv_instance( input );
           }
       };
-    template< typename To >
-      class string_cast_internal< const char32_t*, To > {
+    template< typename From, typename To >
+      class string_cast_internal< From, To, char32_t* > {
         public:
-          static To exec( const char32_t *input ) {
+          static To exec( From input ) {
             iconvpp::converter< std::u32string, To > iconv_instance;
             return iconv_instance( input );
           }
       };
-    template< typename To >
-      class string_cast_internal< const char16_t*, To > {
+    template< typename From, typename To >
+      class string_cast_internal< From, To, char16_t* > {
         public:
-          static To exec( const char16_t *input ) {
+          static To exec( From input ) {
             iconvpp::converter< std::u16string, To > iconv_instance;
             return iconv_instance( input );
           }

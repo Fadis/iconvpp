@@ -34,4 +34,6 @@ int main() {
   std::string system_string;
   std::getline( std::cin, system_string );
   std::cout << iconvpp::string_cast< eucjpstring >( system_string ) << std::endl;
+  char foo[] = "こんすとじゃないえくすぷれっしょん";
+  std::cout << iconvpp::string_cast< eucjpstring >( foo ) << std::endl;
 }
