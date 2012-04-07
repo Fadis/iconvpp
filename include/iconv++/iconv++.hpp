@@ -10,6 +10,7 @@
 #include<exception>
 #include<stdexcept>
 #include<vector>
+#include<type_traits>
 
 namespace iconvpp {
   namespace detail {
@@ -147,43 +148,36 @@ namespace iconvpp {
         iconv_t cd; 
     };
   namespace detail {
-    template< typename From, typename To, typename raw_from_type = typename boost::remove_cv< From >::type >
-      class string_cast_internal {
-        public:
-          static To exec( From input ) {
-            iconvpp::converter< From, To > iconv_instance;
-            return iconv_instance( input );
-          }
-      };
-    template< typename From, typename To >
-      class string_cast_internal< From, To, char* > {
-        public:
-          static To exec( From input ) {
-            iconvpp::converter< std::string, To > iconv_instance;
-            return iconv_instance( input );
-          }
-      };
-    template< typename From, typename To >
-      class string_cast_internal< From, To, char32_t* > {
-        public:
-          static To exec( From input ) {
-            iconvpp::converter< std::u32string, To > iconv_instance;
-            return iconv_instance( input );
-          }
-      };
-    template< typename From, typename To >
-      class string_cast_internal< From, To, char16_t* > {
-        public:
-          static To exec( From input ) {
-            iconvpp::converter< std::u16string, To > iconv_instance;
-            return iconv_instance( input );
-          }
-      };
+    template< typename To, typename From, typename From_ = typename std::decay<From>::type >
+      auto string_cast_impl( From && input )
+        -> typename std::enable_if<!std::is_pointer<From_>::value, To>::type
+      {
+        iconvpp::converter< From_, To > iconv_instance;
+        return iconv_instance( std::forward<From>(input) );
+      }
+    template< typename To >
+      To string_cast_impl( const char* input )
+      {
+        iconvpp::converter< std::string, To > iconv_instance;
+        return iconv_instance( input );
+      }
+    template< typename To >
+      To string_cast_impl( const char32_t* input )
+      {
+        iconvpp::converter< std::u32string, To > iconv_instance;
+        return iconv_instance( input );
+      }
+    template< typename To >
+      To string_cast_impl( const char16_t* input )
+      {
+        iconvpp::converter< std::u16string, To > iconv_instance;
+        return iconv_instance( input );
+      }
   }
 
   template< typename To, typename From >
-    To string_cast( From input ) {
-      return detail::string_cast_internal< From, To >::exec( input );
+    To string_cast( From && input ) {
+      return detail::string_cast_impl<To>( std::forward<From>(input) );
     }
 }
 
