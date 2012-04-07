@@ -65,7 +65,7 @@ namespace iconvpp {
             &current_output_head, &output_left_size );
         if( static_cast<int>( result ) != -1 ) { // iconv succeed
           output.resize( output.size() - output_left_size );
-          return std::make_pair( output, std::vector<char>() );
+          return std::make_pair( std::move(output), std::vector<char>() );
         }
         else { // iconv failed for some reason
           switch( errno ) {
@@ -80,7 +80,7 @@ namespace iconvpp {
                 output.resize( output.size() - output_left_size );
                 std::vector<char>::const_iterator invalid_char_head = input.begin();
                 std::advance( invalid_char_head, input.size() - input_left_size );
-                return std::make_pair( output, std::vector<char>( invalid_char_head, input.end() ) );
+                return std::make_pair( std::move(output), std::vector<char>( invalid_char_head, input.end() ) );
               }
             default: // other erros are not fixable in this function so just throw
               throw std::runtime_error( strerror( errno ) );
